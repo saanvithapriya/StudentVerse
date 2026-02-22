@@ -1,0 +1,16 @@
+{
+    "name": "studentverse-root",
+    "version": "1.0.0",
+    "description": "StudentVerse fullstack app",
+    "scripts": {
+        "start": "node backend/server.js",
+        "server": "nodemon backend/server.js",
+        "client": "npm run dev --prefix frontend",
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "build": "npm run build --prefix frontend"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.0.1"
+    }
+}
