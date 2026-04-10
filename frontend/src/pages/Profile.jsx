@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Settings, Package, Star, FileText, Heart, ShieldCheck, LogOut, MessageSquare } from 'lucide-react';
+import { User, Settings, Package, Star, FileText, Heart, ShieldCheck, LogOut, MessageSquare, X, Phone, Linkedin, Link as LinkIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -15,8 +15,44 @@ export default function Profile() {
             navigate('/login');
         } else {
             fetchOrders();
+            fetchFullProfile();
         }
     }, [user, navigate]);
+
+    const [fullUser, setFullUser] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [contactForm, setContactForm] = useState({ phone: '', linkedin: '', portfolio: '' });
+
+    const fetchFullProfile = async () => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.get('/api/auth/profile', config);
+            setFullUser(data);
+            if (data.contactInfo) {
+                setContactForm({
+                    phone: data.contactInfo.phone || '',
+                    linkedin: data.contactInfo.linkedin || '',
+                    portfolio: data.contactInfo.portfolio || ''
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load profile details', error);
+        }
+    };
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            const { data } = await axios.put('/api/auth/profile', { contactInfo: contactForm }, config);
+            setFullUser(data);
+            setShowEditModal(false);
+            alert('Profile updated successfully!');
+        } catch (err) {
+            console.error(err);
+            alert('Encountered an error updating profile.');
+        }
+    };
 
     const fetchOrders = async () => {
         try {
@@ -47,7 +83,7 @@ export default function Profile() {
             {/* Profile Header */}
             <div className="glass-card p-6 md:p-8 mb-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary-500 via-primary-600 to-secondary-500 flex items-center justify-end px-6">
-                    <button className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/30 transition-colors">
+                    <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/30 transition-colors cursor-pointer z-20 relative">
                         <Settings className="w-4 h-4" /> Edit Profile
                     </button>
                 </div>
@@ -64,7 +100,30 @@ export default function Profile() {
                             {user.name}
                             <ShieldCheck className="w-6 h-6 text-emerald-500" title="Verified College Email" />
                         </h1>
-                        <p className="text-slate-500 font-medium">{user.email}</p>
+                        <p className="text-slate-500 font-medium mb-4">{user.email}</p>
+                        
+                        {fullUser?.contactInfo && (fullUser.contactInfo.phone || fullUser.contactInfo.linkedin || fullUser.contactInfo.portfolio) && (
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-600 font-medium">
+                                {fullUser.contactInfo.phone && (
+                                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                                        <Phone className="w-4 h-4 text-slate-400" />
+                                        {fullUser.contactInfo.phone}
+                                    </div>
+                                )}
+                                {fullUser.contactInfo.linkedin && (
+                                    <a href={fullUser.contactInfo.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                                        <Linkedin className="w-4 h-4" />
+                                        LinkedIn
+                                    </a>
+                                )}
+                                {fullUser.contactInfo.portfolio && (
+                                    <a href={fullUser.contactInfo.portfolio} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors">
+                                        <LinkIcon className="w-4 h-4 text-slate-500" />
+                                        Portfolio
+                                    </a>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-4 w-full md:w-auto mt-4 md:mt-0 pb-2">
@@ -177,6 +236,60 @@ export default function Profile() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Profile Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-lg font-bold text-slate-800">Edit Profile & Contacts</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                <div className="p-3 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg mb-4">
+                                    Your contact details will be shared with users when they request to connect with you on the Skill Exchange!
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
+                                    <input 
+                                        type="tel" placeholder="+91 9876543210"
+                                        value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} 
+                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">LinkedIn Profile Optional</label>
+                                    <input 
+                                        type="url" placeholder="https://linkedin.com/in/username"
+                                        value={contactForm.linkedin} onChange={e => setContactForm({...contactForm, linkedin: e.target.value})} 
+                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Portfolio/GitHub Optional</label>
+                                    <input 
+                                        type="url" placeholder="https://github.com/username"
+                                        value={contactForm.portfolio} onChange={e => setContactForm({...contactForm, portfolio: e.target.value})} 
+                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 outline-none" 
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                    <button type="button" onClick={() => setShowEditModal(false)} className="px-5 py-2 rounded-xl font-medium text-slate-600 hover:bg-slate-100">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-md transition-colors">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -44,6 +44,7 @@ router.post('/signup', async (req, res) => {
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                isAdmin: user.isAdmin,
                 token: generateToken(user._id),
             });
         } else {
@@ -68,6 +69,7 @@ router.post('/login', async (req, res) => {
                 _id: user.id,
                 name: user.name,
                 email: user.email,
+                isAdmin: user.isAdmin,
                 token: generateToken(user._id),
             });
         } else {
@@ -91,6 +93,49 @@ router.get('/profile', protect, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/auth/make-admin
+// @desc    Make user an admin (for testing)
+// @access  Private
+router.put('/make-admin', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.isAdmin = true;
+        await user.save();
+        res.json({ message: 'User is now an admin', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile contacts
+// @access  Private
+router.put('/profile', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (user) {
+            if (req.body.contactInfo) {
+                user.contactInfo = {
+                    phone: req.body.contactInfo.phone !== undefined ? req.body.contactInfo.phone : user.contactInfo.phone,
+                    linkedin: req.body.contactInfo.linkedin !== undefined ? req.body.contactInfo.linkedin : user.contactInfo.linkedin,
+                    portfolio: req.body.contactInfo.portfolio !== undefined ? req.body.contactInfo.portfolio : user.contactInfo.portfolio
+                };
+            }
+            
+            const updatedUser = await user.save();
+            res.json(updatedUser);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 

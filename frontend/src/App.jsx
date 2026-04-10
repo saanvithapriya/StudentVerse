@@ -9,8 +9,10 @@ import Cart from './pages/Cart';
 
 import Orders from './pages/Orders';
 import Notes from './pages/Notes';
+import AdminDashboard from './pages/AdminDashboard';
 
 import Discussion from './pages/Discussion';
+import DiscussionDetail from './pages/DiscussionDetail';
 import SkillExchange from './pages/SkillExchange';
 
 import Profile from './pages/Profile';
@@ -53,8 +55,10 @@ function App() {
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
               <Route path="/discussion" element={<ProtectedRoute><Discussion /></ProtectedRoute>} />
+              <Route path="/discussion/:id" element={<ProtectedRoute><DiscussionDetail /></ProtectedRoute>} />
               <Route path="/skills" element={<ProtectedRoute><SkillExchange /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />

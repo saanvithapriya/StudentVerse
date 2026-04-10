@@ -57,14 +57,21 @@ export default function Navbar() {
                     </Link>
 
                     {user ? (
-                        <Link to="/profile" className="flex items-center space-x-2 p-1 pr-3 rounded-full border border-slate-200 hover:border-primary-300 transition-colors bg-white group">
-                            <div className="bg-primary-100 p-1.5 rounded-full group-hover:bg-primary-200 transition-colors">
-                                <span className="font-bold text-sm text-primary-700 w-5 h-5 flex items-center justify-center">
-                                    {user.name.charAt(0)}
-                                </span>
-                            </div>
-                            <span className="text-sm font-medium text-slate-700 truncate max-w-[100px]">{user.name.split(' ')[0]}</span>
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <Link to="/profile" className="flex items-center space-x-2 p-1 pr-3 rounded-full border border-slate-200 hover:border-primary-300 transition-colors bg-white group">
+                                <div className="bg-primary-100 p-1.5 rounded-full group-hover:bg-primary-200 transition-colors">
+                                    <span className="font-bold text-sm text-primary-700 w-5 h-5 flex items-center justify-center">
+                                        {user.name.charAt(0)}
+                                    </span>
+                                </div>
+                                <span className="text-sm font-medium text-slate-700 truncate max-w-[100px]">{user.name.split(' ')[0]}</span>
+                            </Link>
+                            {user.isAdmin && (
+                                <Link to="/admin" className="px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 font-medium hover:bg-emerald-100 transition-colors shadow-sm">
+                                    Admin
+                                </Link>
+                            )}
+                        </div>
                     ) : (
                         <Link to="/login" className="px-5 py-2 rounded-full bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors shadow-md shadow-primary-500/20">
                             Sign In
@@ -103,6 +110,11 @@ export default function Navbar() {
                                 <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2">
                                     <User className="w-5 h-5" /> My Profile
                                 </Link>
+                                {user.isAdmin && (
+                                    <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-emerald-600 font-bold">
+                                        <Package className="w-5 h-5" /> Admin Dashboard
+                                    </Link>
+                                )}
                                 <button onClick={handleLogout} className="flex items-center gap-2 text-red-500 text-left">
                                     <LogOut className="w-5 h-5" /> Sign Out
                                 </button>

@@ -17,6 +17,15 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
+    },
+    contactInfo: {
+        phone: { type: String, default: '' },
+        linkedin: { type: String, default: '' },
+        portfolio: { type: String, default: '' }
     }
 });
 

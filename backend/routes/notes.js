@@ -1,0 +1,153 @@
+const express = require('express');
+const router = express.Router();
+const Note = require('../models/Note');
+const { protect } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
+const fs = require('fs');
+const path = require('path');
+
+// @route   POST /api/notes
+// @desc    Upload a new note (pending approval)
+// @access  Private
+router.post('/', protect, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const { title, subject, semester, tags } = req.body;
+        
+        let tagsArray = [];
+        if (tags) {
+            try {
+                tagsArray = JSON.parse(tags);
+            } catch (e) {
+                // If not JSON string, maybe comma separated
+                tagsArray = tags.split(',').map(tag => tag.trim());
+            }
+        }
+
+        const User = require('../models/User');
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const note = await Note.create({
+            title,
+            subject,
+            semester,
+            tags: tagsArray,
+            uploader: user._id,
+            uploaderName: user.name,
+            fileUrl: `/uploads/${req.file.filename}`
+        });
+
+        res.status(201).json(note);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// @route   GET /api/notes
+// @desc    Get all APPROVED notes
+// @access  Public
+router.get('/', async (req, res) => {
+    try {
+        const notes = await Note.find({ isApproved: true }).sort('-createdAt');
+        res.json(notes);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/notes/pending
+// @desc    Get all PENDING notes
+// @access  Private (Admin Only)
+router.get('/pending', protect, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ message: 'Access denied. Admins only.' });
+        }
+        const notes = await Note.find({ isApproved: false }).sort('-createdAt');
+        res.json(notes);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/notes/:id/approve
+// @desc    Approve a pending note
+// @access  Private (Admin Only)
+router.put('/:id/approve', protect, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ message: 'Access denied. Admins only.' });
+        }
+        
+        const note = await Note.findById(req.params.id);
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+
+        note.isApproved = true;
+        await note.save();
+
+        res.json(note);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   DELETE /api/notes/:id/reject
+// @desc    Reject and delete a note
+// @access  Private (Admin Only)
+router.delete('/:id/reject', protect, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ message: 'Access denied. Admins only.' });
+        }
+
+        const note = await Note.findById(req.params.id);
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+
+        // Delete the file
+        const filePath = path.join(__dirname, '../', note.fileUrl);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        await note.deleteOne();
+        res.json({ message: 'Note rejected and removed' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// @route   PUT /api/notes/:id/download
+// @desc    Increment downloads counter
+// @access  Public
+router.put('/:id/download', async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id);
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+        
+        // Let's implement atomic increment
+        const updatedNote = await Note.findByIdAndUpdate(
+            req.params.id, 
+            { $inc: { downloads: 1 } },
+            { new: true }
+        );
+        res.json(updatedNote);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+module.exports = router;
