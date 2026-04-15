@@ -28,6 +28,19 @@ router.get('/', async (req, res) => {
     }
 });
 
+// @route   GET /api/skills/my
+// @desc    Get logged-in user's own skills
+// @access  Private
+router.get('/my', protect, async (req, res) => {
+    try {
+        const skills = await Skill.find({ author: req.user.id }).sort({ createdAt: -1 });
+        res.json(skills);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   POST /api/skills
 // @desc    Create a new skill offer/request
 // @access  Private
@@ -51,6 +64,32 @@ router.post('/', protect, async (req, res) => {
         });
 
         res.status(201).json(skill);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   DELETE /api/skills/:id
+// @desc    Delete a skill (owner or admin)
+// @access  Private
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const skill = await Skill.findById(req.params.id);
+        if (!skill) {
+            return res.status(404).json({ message: 'Skill not found' });
+        }
+
+        const requestingUser = await User.findById(req.user.id);
+        const isOwner = skill.author.toString() === req.user.id;
+        const isAdmin = requestingUser && requestingUser.isAdmin;
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: 'Not authorized to delete this skill listing' });
+        }
+
+        await skill.deleteOne();
+        res.json({ message: 'Skill listing removed' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

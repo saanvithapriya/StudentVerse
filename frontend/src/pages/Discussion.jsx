@@ -188,7 +188,7 @@ export default function Discussion() {
 
                                                 <div className="flex items-center gap-1.5 text-sm font-medium text-slate-500 group-hover:text-primary-600 transition-colors">
                                                     <MessageSquare className="w-4 h-4" />
-                                                    {post.answers} Answers
+                                                    {post.answersCount} Answers
                                                 </div>
                                             </div>
                                         </div>

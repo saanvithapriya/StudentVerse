@@ -21,6 +21,10 @@ const orderRoutes = require('./routes/orders');
 const noteRoutes = require('./routes/notes');
 const discussionRoutes = require('./routes/discussions');
 const skillRoutes = require('./routes/skills');
+const notificationRoutes = require('./routes/notifications');
+const reviewRoutes = require('./routes/reviews');
+const lostFoundRoutes = require('./routes/lostfound');
+const messageRoutes = require('./routes/messages');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -28,6 +32,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/skills', skillRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/lostfound', lostFoundRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Simple test route
 app.get('/api/health', (req, res) => {

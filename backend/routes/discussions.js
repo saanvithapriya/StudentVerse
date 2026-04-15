@@ -42,6 +42,27 @@ router.get('/', async (req, res) => {
     }
 });
 
+// @route   GET /api/discussions/my
+// @desc    Get logged-in user's own discussions
+// @access  Private
+router.get('/my', protect, async (req, res) => {
+    try {
+        const discussions = await Discussion.find({ author: req.user.id })
+            .sort({ createdAt: -1 })
+            .lean();
+        
+        const result = discussions.map(post => ({
+            ...post,
+            answersCount: post.answers ? post.answers.length : 0
+        }));
+        
+        res.json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   GET /api/discussions/:id
 // @desc    Get single discussion post by ID
 // @access  Public
@@ -144,6 +165,7 @@ router.post('/:id/answers/:answerId/replies', protect, async (req, res) => {
 router.put('/:id/like', protect, async (req, res) => {
     try {
         const discussion = await Discussion.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
+        if (!discussion) return res.status(404).json({ message: 'Discussion not found' });
         res.json(discussion);
     } catch (error) {
         console.error(error);
@@ -152,15 +174,20 @@ router.put('/:id/like', protect, async (req, res) => {
 });
 
 // @route   DELETE /api/discussions/:id
-// @desc    Admin delete a discussion
+// @desc    Delete a discussion (own post or admin)
 // @access  Private
 router.delete('/:id', protect, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user || !user.isAdmin) return res.status(403).json({ message: 'Access denied. Admins only.' });
-
+        const requestingUser = await User.findById(req.user.id);
         const discussion = await Discussion.findById(req.params.id);
         if (!discussion) return res.status(404).json({ message: 'Discussion not found' });
+
+        const isOwner = discussion.author.toString() === req.user.id;
+        const isAdmin = requestingUser && requestingUser.isAdmin;
+
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: 'Access denied.' });
+        }
 
         await discussion.deleteOne();
         res.json({ message: 'Discussion removed' });

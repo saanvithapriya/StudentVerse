@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const protect = (req, res, next) => {
     let token;
@@ -9,18 +10,31 @@ const protect = (req, res, next) => {
     ) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true });
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = decoded; // Contains id from payload
-            next();
+            return next();
         } catch (error) {
-            console.error(error);
-            res.status(401).json({ message: 'Not authorized, token failed. Reason: ' + error.message });
+            console.error('Auth error:', error.message);
+            return res.status(401).json({ message: 'Not authorized, token failed. Reason: ' + error.message });
         }
     }
 
     if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        return res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
 
-module.exports = { protect };
+// Middleware: must be used AFTER protect
+const isAdmin = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (user && user.isAdmin) {
+            return next();
+        }
+        return res.status(403).json({ message: 'Access denied. Admins only.' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server error checking admin status' });
+    }
+};
+
+module.exports = { protect, isAdmin };
